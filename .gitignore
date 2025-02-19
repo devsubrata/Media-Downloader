@@ -1,0 +1,4 @@
+downloader_env/
+build/
+dist/
+media_downloader.spec
