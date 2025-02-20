@@ -5,7 +5,46 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton,
     QComboBox, QTextEdit
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QIcon
+
+class DownloadThread(QThread):
+    progress_signal = pyqtSignal(str)  # Sends progress updates
+    complete_signal = pyqtSignal(str)  # Sends completion message
+
+    def __init__(self, url, format_choice):
+        super().__init__()
+        self.url = url
+        self.format_choice = format_choice
+
+    def run(self):
+        """ Runs the download process in a separate thread """
+        ouput_dir = os.path.join(os.path.expanduser("~"), "Desktop")
+        options = {
+            'format': 'bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[ext=mp4]' if "Video" in self.format_choice else 'bestaudio',            'outtmpl': '%(title)s.%(ext)s',
+            'outtmpl': os.path.join(ouput_dir, '%(title)s.%(ext)s'),
+            # Attach progress function
+            'progress_hooks': [self.update_progress],
+            'postprocessors': [{
+                'key': 'FFmpegVideoConvertor',
+                'preferedformat': 'mp4'
+            }] if "Video" in self.format_choice else [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+        }
+
+        with yt_dlp.YoutubeDL(options) as ydl:
+            ydl.download([self.url])
+
+        self.complete_signal.emit("✅ Download Complete! Saved in desktop!")
+
+    def update_progress(self, d):
+        """ Emits progress updates in real-time """
+        if d['status'] == 'downloading':
+            progress_msg = f"📶 {d['_percent_str']} completed! - {d['_eta_str']} remaining"
+            self.progress_signal.emit(progress_msg)
 
 
 class YouTubeDownloader(QWidget):
@@ -16,18 +55,21 @@ class YouTubeDownloader(QWidget):
     def initUI(self):
         self.setWindowTitle("Media Downloader by Subrata K. Dev")
         self.setGeometry(300, 200, 500, 400)
+        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), 'logo.png')))
 
         layout = QVBoxLayout()
 
         # Title Label
-        self.title_label = QLabel("YouTube Video Downloader", self)
+        self.title_label = QLabel("Media Downloader (audio/video)", self)
         self.title_label.setObjectName("titleLabel")
-        layout.addWidget(self.title_label,
-                         alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(
+            self.title_label,
+            alignment=Qt.AlignmentFlag.AlignCenter
+        )
 
         # Input Field
         self.url_input = QLineEdit(self)
-        self.url_input.setPlaceholderText("Paste YouTube URL here...")
+        self.url_input.setPlaceholderText("Paste media URL here...")
         layout.addWidget(self.url_input)
 
         # Format Selection
@@ -56,29 +98,11 @@ class YouTubeDownloader(QWidget):
         format_choice = self.format_combo.currentText()
         self.output_log.append(f"🔽 Downloading: {url} ({format_choice})...")
 
-        options = {
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]' if "Video" in format_choice else 'bestaudio',
-            'outtmpl': '%(title)s.%(ext)s',
-            'progress_hooks': [self.update_progress],
-            'postprocessors': [{
-                'key': 'FFmpegVideoConvertor',
-                'preferedformat': 'mp4'
-            }] if "Video" in format_choice else [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-        }
-
-        with yt_dlp.YoutubeDL(options) as ydl:
-            ydl.download([url])
-
-        self.output_log.append("✅ Download Complete!")
-
-    def update_progress(self, d):
-        if d['status'] == 'downloading':
-            self.output_log.append(
-                f"📶 Progress: {d['_percent_str']} - {d['_eta_str']} remaining")
+        # Start the download in a separate thread
+        self.thread = DownloadThread(url, format_choice)
+        self.thread.progress_signal.connect(self.output_log.append)  # Update log in real-time
+        self.thread.complete_signal.connect(self.output_log.append)  # Show completion message
+        self.thread.start()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -2,3 +2,6 @@ downloader_env/
 build/
 dist/
 media_downloader.spec
+playground/
+*.mp4
+*.mp3
