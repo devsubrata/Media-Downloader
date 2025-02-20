@@ -2,6 +2,8 @@
 
 Media Downloader is a simple yet powerful GUI application built using **PyQt** and **yt-dlp** that allows users to download videos and audio from multiple platforms like **YouTube, Facebook, Twitter, Instagram, and more**.
 
+![MediaDownloader](https://github.com/devsubrata/Media-Downloader/blob/main/Media%20Downloader.jpg)
+
 ## 🚀 Features
 - Download videos in **MP4** format
 - Extract and download **MP3** audio from videos
