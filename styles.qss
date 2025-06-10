@@ -21,7 +21,9 @@ QLineEdit {
 }
 
 QPushButton {
-    background-color: #f39c12;
+    background-color: #f79800;
+    font-style: bold;
+    font-size: 20px;
     color: white;
     border-radius: 5px;
     padding: 8px;
@@ -29,6 +31,15 @@ QPushButton {
 
 QPushButton:hover {
     background-color: #e67e22;
+}
+
+QPushButton#btn_group {
+    background-color: #3407ff; /* Yellow */
+    font-size: 14px;
+    color: white;
+}
+QPushButton#btn_group:hover {
+    background-color: #3c11fa; /* Darker yellow on hover */
 }
 
 QComboBox {
